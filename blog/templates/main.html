@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App | Modern Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --body-bg: #f8fafc;
+        }
+
+        body { 
+            background-color: var(--body-bg); 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #1e293b;
+        }
+
+        /* Navbar Style */
+        .navbar {
+            background: var(--primary-gradient) !important;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+            border-bottom: 0;
+        }
+
+        /* Card Styles */
+        .card {
+            border: none;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .todo-card {
+            border-left: 6px solid #6366f1;
+            background: #ffffff;
+        }
+
+        .todo-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important;
+        }
+
+        /* Input Styles */
+        .form-control {
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            border-color: #6366f1;
+        }
+
+        /* Button Styles */
+        .btn-primary {
+            background: var(--primary-gradient);
+            border: none;
+            padding: 12px;
+            font-weight: 600;
+            border-radius: 10px;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        /* Status Styles */
+        .completed-text { 
+            text-decoration: line-through; 
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        .task-badge {
+            background: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            padding: 40px;
+            text-align: center;
+            background: #fff;
+            border-radius: 20px;
+            border: 2px dashed #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark mb-5">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center" >
+            <i class="bi bi-check2-circle me-2 fs-3"></i>
+            <span class="fw-bold">TaskMaster</span>
+        </a>
+        <div class="d-flex align-items-center text-white">
+            <span class="me-3 d-none d-sm-inline">Salom, <span class="fw-bold">{{ user.username }}</span></span>
+            <form action="{% url 'logout' %}" method="post" class="m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-light text-danger fw-bold rounded-pill px-3">
+                    Chiqish <i class="bi bi-box-arrow-right ms-1"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<div class="container pb-5">
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card shadow-sm sticky-top" style="top: 20px; z-index: 100;">
+                <div class="card-body p-4">
+                    <h5 class="card-title fw-bold mb-4">
+                        <i class="bi bi-plus-circle-dotted me-2 text-primary"></i>Yangi vazifa
+                    </h5>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Sarlavha</label>
+                            <input type="text" name="title" class="form-control" placeholder="Masalan: Ingliz tili kursi" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Tavsif</label>
+                            <textarea name="description" class="form-control" rows="3" placeholder="Vazifa haqida batafsil..."></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label small fw-semibold">
+                                <i class="bi bi-bell me-1"></i> Eslatma vaqti
+                            </label>
+                            <div class="row g-2 mb-4">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold">Sana</label>
+                            <input type="date" name="notif_date" class="form-control"> </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold">Vaqt</label>
+                            <input type="time" name="notif_time" class="form-control"> </div>
+                        </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 shadow-sm">
+                            Vazifani saqlash
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold m-0">Vazifalarim</h4>
+                <span class="task-badge">{{ todos.count }} ta faol</span>
+            </div>
+            
+            {% for task in todos %}
+            <div class="card shadow-sm mb-3 todo-card">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="fw-bold mb-1 text-dark">{{ task.title }}</h5>
+                            <p class="text-muted mb-2">{{ task.description|truncatechars:100 }}</p>
+                            <div class="d-flex gap-3">
+                                <small class="text-secondary small">
+                                    <i class="bi bi-calendar3 me-1"></i> {{ task.created_at|date:"d-M, H:i" }}
+                                </small>
+                                {% if task.time_notification %}
+                                <small class="text-danger small fw-semibold">
+                                    <i class="bi bi-alarm me-1"></i> {{ task.time_notification|date:"H:i" }}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                            <div class="btn-group shadow-sm rounded-3">
+                                <a href="{% url 'complete_todo' task.id %}" class="btn btn-success btn-sm px-3">
+                                    <i class="bi bi-check-lg"></i>
+                                </a>
+                                <a href="/todo_delete/{{ task.id }}/" 
+                                   class="btn btn-white btn-sm border-start text-danger px-3"
+                                   onclick="return confirm('O‘chirmoqchimisiz?')">
+                                   <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state shadow-sm">
+                <i class="bi bi-journal-x fs-1 text-muted mb-3 d-block"></i>
+                <h5 class="fw-bold text-dark">Hozircha vazifalar yo'q</h5>
+                <p class="text-muted">Yangi vazifa qo'shish orqali kuningizni rejalashtiring.</p>
+            </div>
+            {% endfor %}
+
+            {% if completed_todos %}
+            <div class="mt-5 mb-3">
+                <h5 class="text-muted fw-bold"><i class="bi bi-check2-all me-2"></i>Yakunlanganlar</h5>
+            </div>
+            {% for task in completed_todos %}
+            <div class="card border-0 shadow-sm mb-2 opacity-75 bg-white">
+                <div class="card-body py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill text-success me-3"></i>
+                        <span class="completed-text fw-medium">{{ task.title }}</span>
+                    </div>
+                    <a href="/todo_delete/{{ task.id }}/" class="btn btn-link btn-sm text-danger text-decoration-none">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const notifSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+notifSound.loop = true;
+
+function checkNotifications() {
+    const tasks = [
+        {% for task in todos %}
+            {% if task.time_notification %}
+            {
+                id: "{{ task.id }}",
+                title: "{{ task.title|escapejs }}",
+                // Vaqtni solishtirish uchun Date obyektiga o'tkazamiz
+                time: new Date("{{ task.time_notification|date:'Y-m-d H:i' }}")
+            },
+            {% endif %}
+        {% endfor %}
+    ];
+
+    const now = new Date();
+
+    tasks.forEach(task => {
+        // Shart: Vazifa vaqti kelgan yoki o'tib ketgan bo'lsa 
+        // VA hali bu vazifa uchun notif ko'rsatib yopilmagan bo'lsa (sessionStorage orqali)
+        if (task.time <= now && !sessionStorage.getItem('notified-' + task.id)) {
+            
+            if (Notification.permission === "granted") {
+                // Ovozni chalish
+                notifSound.play().catch(e => console.log("Ovoz bloklandi:", e));
+
+                const notification = new Notification("DIQQAT: Vazifa vaqti!", {
+                    body: "Bajarilishi kerak: " + task.title,
+                    icon: "https://cdn-icons-png.flaticon.com/512/1792/1792931.png",
+                    requireInteraction: true, // Siz aytgandek, bosmaguncha turadi
+                    tag: "task-" + task.id    // Dublikatlarni oldini oladi
+                });
+
+                // Bildirishnoma ko'rsatilganini belgilash (sahifa yangilansa qayta chiqmasligi uchun)
+                sessionStorage.setItem('notified-' + task.id, 'true');
+
+                notification.onclick = function() {
+                    notifSound.pause();
+                    notifSound.currentTime = 0;
+                    window.focus();
+                    this.close();
+                };
+
+                notification.onclose = function() {
+                    notifSound.pause();
+                };
+            }
+        }
+    });
+}
+
+// Har 10 soniyada tekshirib turish (aniqlik uchun)
+setInterval(checkNotifications, 5000);
+checkNotifications();
+
+</script>
+</body>
+</html>
+
+
+<!--
+
+
+ const notifSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+notifSound.loop = true;
+
+function checkNotifications() {
+    const tasks = [
+        {% for task in todos %}
+            {% if task.time_notification %}
+            {
+                id: "{{ task.id }}",
+                title: "{{ task.title|escapejs }}",
+                // Vaqtni solishtirish uchun Date obyektiga o'tkazamiz
+                time: new Date("{{ task.time_notification|date:'Y-m-d H:i' }}")
+            },
+            {% endif %}
+        {% endfor %}
+    ];
+
+    const now = new Date();
+
+    tasks.forEach(task => {
+        // Shart: Vazifa vaqti kelgan yoki o'tib ketgan bo'lsa 
+        // VA hali bu vazifa uchun notif ko'rsatib yopilmagan bo'lsa (sessionStorage orqali)
+        if (task.time <= now && !sessionStorage.getItem('notified-' + task.id)) {
+            
+            if (Notification.permission === "granted") {
+                // Ovozni chalish
+                notifSound.play().catch(e => console.log("Ovoz bloklandi:", e));
+
+                const notification = new Notification("DIQQAT: Vazifa vaqti!", {
+                    body: "Bajarilishi kerak: " + task.title,
+                    icon: "https://cdn-icons-png.flaticon.com/512/1792/1792931.png",
+                    requireInteraction: true, // Siz aytgandek, bosmaguncha turadi
+                    tag: "task-" + task.id    // Dublikatlarni oldini oladi
+                });
+
+                // Bildirishnoma ko'rsatilganini belgilash (sahifa yangilansa qayta chiqmasligi uchun)
+                sessionStorage.setItem('notified-' + task.id, 'true');
+
+                notification.onclick = function() {
+                    notifSound.pause();
+                    notifSound.currentTime = 0;
+                    window.focus();
+                    this.close();
+                };
+
+                notification.onclose = function() {
+                    notifSound.pause();
+                };
+            }
+        }
+    });
+}
+
+// Har 10 soniyada tekshirib turish (aniqlik uchun)
+setInterval(checkNotifications, 5000);
+checkNotifications();
+
+-->
